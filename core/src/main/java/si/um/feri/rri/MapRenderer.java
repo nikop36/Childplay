@@ -7,13 +7,16 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics. Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic. gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.net.HttpRequestBuilder;
 import com.badlogic.gdx. utils.Array;
+import com.badlogic.gdx.utils.ObjectMap;
 
 public class MapRenderer {
     private Texture[][] mapTiles;
     private boolean isLoading = false;
     private Array<WMSDataFetcher.LocationData> markers;
+    private WMSDataFetcher.LocationData selectedMarker = null;
     private int tilesLoaded = 0;
     private int totalTilesToLoad = 0;
 
@@ -28,12 +31,61 @@ public class MapRenderer {
     private int centerTileX;
     private int centerTileY;
 
+
     private ShapeRenderer shapeRenderer;
+
+    private final ObjectMap<String, Texture> tileCache = new ObjectMap<>();
 
     public MapRenderer() {
         markers = new Array<>();
         mapTiles = new Texture[gridSize][gridSize];
         shapeRenderer = new ShapeRenderer();
+    }
+
+    public int getZoom() { return zoom; }
+
+    public WMSDataFetcher.LocationData getSelectedMarker() {
+        return selectedMarker;
+    }
+
+    public void pan(float dx, float dy) {
+        double lonPerPixel = 360.0 / (256 * Math.pow(2, zoom));
+        double latPerPixel = lonPerPixel;
+
+        centerLon -= dx * lonPerPixel;
+        centerLat += dy * latPerPixel;
+    }
+
+
+    public void checkMarkerClick(float screenX, float screenY) {
+        int screenWidth = Gdx.graphics.getWidth();
+        int screenHeight = Gdx.graphics.getHeight();
+
+        float fixedY = Gdx.graphics.getHeight() - screenY;
+
+        float startX = (screenWidth - (gridSize * tileSize)) / 2f;
+        float startY = (screenHeight - (gridSize * tileSize)) / 2f;
+
+        for (WMSDataFetcher.LocationData marker : markers) {
+            double markerTileX = (marker.longitude + 180.0) / 360.0 * (1 << zoom);
+            double markerTileY = (1.0 - Math.log(Math.tan(Math.toRadians(marker.latitude)) +
+                1.0 / Math.cos(Math.toRadians(marker.latitude))) / Math.PI) / 2.0 * (1 << zoom);
+
+            double pixelX = (markerTileX - (centerTileX - 1)) * tileSize;
+            double pixelY = (markerTileY - (centerTileY - 1)) * tileSize;
+
+            float mx = startX + (float) pixelX;
+            float my = startY + (gridSize * tileSize) - (float) pixelY;
+
+            float dist = Vector2.dst(screenX, fixedY, mx, my);
+
+            if (dist < 10) {
+                selectedMarker = marker;
+                return;
+            }
+        }
+
+        selectedMarker = null;
     }
 
     public void loadMap() {
@@ -64,42 +116,50 @@ public class MapRenderer {
     }
 
     private void loadTile(final int tileX, final int tileY, final int gridX, final int gridY) {
+        String key = zoom + "_" + tileX + "_" + tileY;
         String tileUrl = String.format("https://tile.openstreetmap.org/%d/%d/%d.png",
             zoom, tileX, tileY);
 
-        // Add delay to respect OSM tile usage policy
-        try {
-            Thread. sleep(100);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        // Use cached tile if available
+        Texture cached = tileCache.get(key);
+        if (cached != null) {
+            mapTiles[gridX][gridY] = cached;
+            tilesLoaded++;
+            return;
         }
+
+        // Respect OSM usage policy
+        try { Thread.sleep(100); } catch (InterruptedException ignored) {}
 
         HttpRequestBuilder requestBuilder = new HttpRequestBuilder();
         Net.HttpRequest httpRequest = requestBuilder.newRequest()
-            .method(Net. HttpMethods.GET)
+            .method(Net.HttpMethods.GET)
             .url(tileUrl)
             .header("User-Agent", "LibGDX-ChildPlay/1.0 (Educational Project)")
             .build();
 
-        Gdx.net. sendHttpRequest(httpRequest, new Net.HttpResponseListener() {
+        Gdx.net.sendHttpRequest(httpRequest, new Net.HttpResponseListener() {
             @Override
             public void handleHttpResponse(Net.HttpResponse httpResponse) {
                 try {
                     byte[] imageData = httpResponse.getResult();
                     Pixmap pixmap = new Pixmap(imageData, 0, imageData.length);
 
-                    Gdx. app.postRunnable(() -> {
-                        mapTiles[gridX][gridY] = new Texture(pixmap);
-                        pixmap.dispose();
+                    Gdx.app.postRunnable(() -> {
+                        try {
+                            Texture tex = new Texture(pixmap);
+                            tileCache.put(key, tex);
+                            mapTiles[gridX][gridY] = tex;
+                        } finally {
+                            pixmap.dispose();
+                        }
+
                         tilesLoaded++;
-
-                        Gdx.app.log("MapRenderer", "Loaded tile " + tilesLoaded + "/" + totalTilesToLoad);
-
                         if (tilesLoaded >= totalTilesToLoad) {
                             isLoading = false;
-                            Gdx.app.log("MapRenderer", "All tiles loaded! Ready to display " + markers.size + " markers");
                         }
                     });
+
                 } catch (Exception e) {
                     Gdx.app.error("MapRenderer", "Error loading tile: " + e.getMessage());
                     tilesLoaded++;
@@ -108,7 +168,7 @@ public class MapRenderer {
 
             @Override
             public void failed(Throwable t) {
-                Gdx.app.error("MapRenderer", "Failed to load tile:  " + t.getMessage());
+                Gdx.app.error("MapRenderer", "Failed to load tile: " + t.getMessage());
                 tilesLoaded++;
             }
 
@@ -118,6 +178,7 @@ public class MapRenderer {
             }
         });
     }
+
 
     public void render(SpriteBatch batch, float screenX, float screenY) {
         int screenWidth = Gdx.graphics.getWidth();
@@ -204,9 +265,7 @@ public class MapRenderer {
         this.centerLon = lon;
     }
 
-    public void setZoom(int zoom) {
-        this.zoom = zoom;
-    }
+    public void setZoom(int zoom) { this.zoom = Math.max(1, Math.min(19, zoom)); }
 
     public boolean isMapLoaded() {
         return tilesLoaded >= totalTilesToLoad;

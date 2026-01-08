@@ -2,6 +2,7 @@ package si. um.feri.rri;
 
 import com.badlogic. gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -46,6 +47,7 @@ public class GameClass extends ApplicationAdapter {
 
         // Fetch all data from Maribor
         loadAllData();
+        Gdx.input.setInputProcessor(new MapInputHandler());
     }
 
     private void loadAllData() {
@@ -186,6 +188,43 @@ public class GameClass extends ApplicationAdapter {
             font.setColor(Color. YELLOW);
             font.draw(batch, "Loading map tiles...", screenWidth / 2 - 100, screenHeight / 2);
         }
+
+        // popup
+        if (mapRenderer.getSelectedMarker() != null) {
+            WMSDataFetcher.LocationData m = mapRenderer.getSelectedMarker();
+
+            // Fixed panel position (left side)
+            float panelX = 20;
+            float panelY = 180;   // below the legend
+            float panelWidth = 350;
+            float panelHeight = 160;
+
+            batch.end();
+
+            // Draw background panel
+            Gdx.gl.glEnable(GL20.GL_BLEND);
+            Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            shapeRenderer.setColor(0.05f, 0.05f, 0.1f, 0.85f);
+            shapeRenderer.rect(panelX, panelY, panelWidth, panelHeight);
+            shapeRenderer.end();
+
+            Gdx.gl.glDisable(GL20.GL_BLEND);
+
+            batch.begin();
+
+            // Draw text inside panel
+            float textX = panelX + 20;
+            float textY = panelY + panelHeight - 20;
+
+            font.setColor(Color.WHITE);
+            font.draw(batch, "Name: " + m.name, textX, textY);
+            font.draw(batch, "Type: " + m.type, textX, textY - 30);
+            font.draw(batch, "Lat: " + m.latitude, textX, textY - 60);
+            font.draw(batch, "Lon: " + m.longitude, textX, textY - 90);
+        }
+
     }
 
     @Override
@@ -196,4 +235,85 @@ public class GameClass extends ApplicationAdapter {
         titleFont.dispose();
         shapeRenderer.dispose();
     }
+
+    private class MapInputHandler implements InputProcessor {
+
+        private float lastX, lastY;
+        private boolean dragging = false;
+
+        @Override
+        public boolean scrolled(float amountX, float amountY) {
+            if (amountY > 0) mapRenderer.setZoom(mapRenderer.getZoom() - 1);
+            else mapRenderer.setZoom(mapRenderer.getZoom() + 1);
+
+            mapRenderer.loadMap();
+            return true;
+        }
+
+        @Override
+        public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+            if (isInsideUI(screenX, screenY)) return false;
+
+            lastX = screenX;
+            lastY = screenY;
+            dragging = true;
+            return true;
+        }
+
+        private boolean isInsideUI(int x, int y) {
+            int screenHeight = Gdx.graphics.getHeight();
+
+            // Top panel
+            if (x >= 20 && x <= 420 &&
+                y >= screenHeight - 100 && y <= screenHeight - 20)
+                return true;
+
+            // Legend panel
+            if (x >= 20 && x <= 340 &&
+                y >= 20 && y <= 160)
+                return true;
+
+            return false;
+        }
+
+        @Override
+        public boolean touchDragged(int screenX, int screenY, int pointer) {
+            if (!dragging) return false;
+
+            float dx = screenX - lastX;
+            float dy = screenY - lastY;
+
+            mapRenderer.pan(dx, dy);
+
+            lastX = screenX;
+            lastY = screenY;
+            return true;
+        }
+
+        @Override
+        public boolean touchUp(int screenX, int screenY, int pointer, int button) {
+            dragging = false;
+
+            // Reload tiles once after drag ends
+            mapRenderer.loadMap();
+
+            // Check marker click
+            mapRenderer.checkMarkerClick(screenX, screenY);
+            return true;
+        }
+
+        @Override
+        public boolean touchCancelled(int i, int i1, int i2, int i3) {
+            return false;
+        }
+
+        // Unused methods
+        @Override public boolean keyDown(int keycode) { return false; }
+        @Override public boolean keyUp(int keycode) { return false; }
+        @Override public boolean keyTyped(char character) { return false; }
+        @Override public boolean mouseMoved(int screenX, int screenY) { return false; }
+    }
+
 }
+
+
