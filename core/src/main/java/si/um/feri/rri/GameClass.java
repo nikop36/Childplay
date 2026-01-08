@@ -28,6 +28,7 @@ public class GameClass extends ApplicationAdapter {
     private int playgrounds = 0;
     private int trainStops = 0;
 
+
     @Override
     public void create() {
         batch = new SpriteBatch();
@@ -44,6 +45,10 @@ public class GameClass extends ApplicationAdapter {
 
         shapeRenderer = new ShapeRenderer();
         allMarkers = new Array<>();
+
+        String apiKey = System.getenv("GEOAPIFY_API_KEY");
+        System.out.println("[Geoapify] key present? " + (apiKey != null && !apiKey.isBlank())); //debug
+        mapRenderer.setGeoapify(apiKey, "osm-carto");
 
         // Fetch all data from Maribor
         loadAllData();
@@ -225,6 +230,9 @@ public class GameClass extends ApplicationAdapter {
             font.draw(batch, "Lon: " + m.longitude, textX, textY - 90);
         }
 
+        // Map attribution (Geoapify requirement)
+        font.setColor(Color.LIGHT_GRAY);
+        font.draw(batch, "© OpenStreetMap contributors • Tiles © Geoapify", 20, 20);
     }
 
     @Override

@@ -31,6 +31,9 @@ public class MapRenderer {
     private int centerTileX;
     private int centerTileY;
 
+    // Geoapify key
+    private String geoapifyApiKey = null;
+    private String geoapifyStyle = "osm-carto";
 
     private ShapeRenderer shapeRenderer;
 
@@ -40,6 +43,11 @@ public class MapRenderer {
         markers = new Array<>();
         mapTiles = new Texture[gridSize][gridSize];
         shapeRenderer = new ShapeRenderer();
+    }
+
+    public void setGeoapify(String apiKey, String style) {
+        this.geoapifyApiKey = apiKey;
+        if (style != null && !style.isBlank()) this.geoapifyStyle = style;
     }
 
     public int getZoom() { return zoom; }
@@ -117,15 +125,19 @@ public class MapRenderer {
 
     private void loadTile(final int tileX, final int tileY, final int gridX, final int gridY) {
         String key = zoom + "_" + tileX + "_" + tileY;
-        String tileUrl = String.format("https://tile.openstreetmap.org/%d/%d/%d.png",
-            zoom, tileX, tileY);
 
-        // Use cached tile if available
-        Texture cached = tileCache.get(key);
-        if (cached != null) {
-            mapTiles[gridX][gridY] = cached;
-            tilesLoaded++;
-            return;
+        final String tileUrl;
+        if (geoapifyApiKey != null && !geoapifyApiKey.isBlank()) {
+            tileUrl = String.format(
+                "https://maps.geoapify.com/v1/tile/carto/%d/%d/%d.png?apiKey=%s",
+                zoom,
+                tileX,
+                tileY,
+                java.net.URLEncoder.encode(geoapifyApiKey.trim(), java.nio.charset.StandardCharsets.UTF_8)
+            );
+        } else {
+            // Fallback (handy for classmates running without a key)
+            tileUrl = String.format("https://tile.openstreetmap.org/%d/%d/%d.png", zoom, tileX, tileY);
         }
 
         // Respect OSM usage policy
