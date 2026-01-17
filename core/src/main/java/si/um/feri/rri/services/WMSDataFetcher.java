@@ -1,4 +1,4 @@
-package si.um.feri.rri;
+package si.um.feri.rri.services;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Net;

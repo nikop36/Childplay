@@ -1,4 +1,4 @@
-package si.um.feri.rri;
+package si.um.feri.rri.old;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Net;
@@ -11,6 +11,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.net.HttpRequestBuilder;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ObjectMap;
+import si.um.feri.rri.services.WMSDataFetcher;
 
 public class MapRenderer {
     private static final String GEOAPIFY_API_KEY = "7a9eb4ca443b47ec8a7e9db8bfb0cbd5";
