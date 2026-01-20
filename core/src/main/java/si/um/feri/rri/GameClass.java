@@ -80,7 +80,7 @@ public class GameClass extends ApplicationAdapter {
         markerSystem = new MarkerSystem(markers, map);
         renderSystem = new RenderSystem(map, tiles, markers, ui);
         cameraSystem = new CameraSystem(map);
-        inputSystem = new InputSystem(cameraSystem);
+        inputSystem = new InputSystem(cameraSystem, map, markers);
         dataSystem = new DataSystem(markers, ui);
 
         Gdx.input.setInputProcessor(inputSystem);
@@ -96,6 +96,8 @@ public class GameClass extends ApplicationAdapter {
         gl.glClearColor(0.1f, 0.1f, 0.1f, 1);
         gl.glClear(com.badlogic.gdx.graphics.GL20.GL_COLOR_BUFFER_BIT);
         
+        inputSystem.update();
+        renderSystem.updateTrains(Gdx.graphics.getDeltaTime());
         map.camera.update();
         batch.begin();
         renderSystem.render(batch);

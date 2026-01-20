@@ -2,6 +2,7 @@ package si.um.feri.rri.services;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Net;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.net.HttpRequestBuilder;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.JsonReader;
@@ -31,8 +32,10 @@ public class WMSDataFetcher {
         public double longitude;
         public String type;
         public JsonValue properties;
+        public Array<Vector2> routePoints;
 
         public LocationData() {
+            routePoints = new Array<>();
         }
 
         public LocationData(String name, double lat, double lon, String type) {
@@ -40,6 +43,7 @@ public class WMSDataFetcher {
             this.latitude = lat;
             this.longitude = lon;
             this.type = type;
+            routePoints = new Array<>();
         }
     }
 
@@ -236,23 +240,34 @@ public class WMSDataFetcher {
                     return true;
 
                 case "LineString":
-                    JsonValue firstPoint = coordinates.get(0);
-                    if (firstPoint != null) {
-                        data.longitude = firstPoint.getDouble(0);
-                        data.latitude = firstPoint.getDouble(1);
+                    // Extract all points for the route
+                    for (JsonValue point : coordinates) {
+                        double lon = point.getDouble(0);
+                        double lat = point.getDouble(1);
+                        data.routePoints.add(new Vector2((float)lon, (float)lat));
+                    }
+                    // Use first point as main coordinate
+                    if (data.routePoints.size > 0) {
+                        data.longitude = data.routePoints.get(0).x;
+                        data.latitude = data.routePoints.get(0).y;
                         return true;
                     }
                     break;
 
                 case "MultiLineString":
-                    JsonValue firstLine = coordinates.get(0);
-                    if (firstLine != null) {
-                        JsonValue point = firstLine.get(0);
-                        if (point != null) {
-                            data.longitude = point.getDouble(0);
-                            data.latitude = point.getDouble(1);
-                            return true;
+                    // Extract all lines
+                    for (JsonValue line : coordinates) {
+                        for (JsonValue point : line) {
+                            double lon = point.getDouble(0);
+                            double lat = point.getDouble(1);
+                            data.routePoints.add(new Vector2((float)lon, (float)lat));
                         }
+                    }
+                    // Use first point as main coordinate
+                    if (data.routePoints.size > 0) {
+                        data.longitude = data.routePoints.get(0).x;
+                        data.latitude = data.routePoints.get(0).y;
+                        return true;
                     }
                     break;
 
