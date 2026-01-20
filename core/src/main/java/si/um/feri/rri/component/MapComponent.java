@@ -10,6 +10,8 @@ public class MapComponent {
 
     public float worldWidth;
     public float worldHeight;
+    public float worldMinX;
+    public float worldMinY;
 
     public int centerTileX = 4400;
     public int centerTileY = 2860;

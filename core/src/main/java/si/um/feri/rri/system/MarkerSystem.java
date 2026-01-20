@@ -18,6 +18,8 @@ public class MarkerSystem {
     public void convertMarkersToWorld() {
 
         markers.markerPositions.clear();
+        
+        int maxTileY = (1 << map.zoom);
 
         for (WMSDataFetcher.LocationData m : markers.markers) {
 
@@ -25,10 +27,21 @@ public class MarkerSystem {
             double tileY = (1.0 - Math.log(Math.tan(Math.toRadians(m.latitude)) +
                 1.0 / Math.cos(Math.toRadians(m.latitude))) / Math.PI) / 2.0 * (1 << map.zoom);
 
-            float worldX = (float) tileX * map.tileSize;
-            float worldY = (float) tileY * map.tileSize;
+            // Convert to world coordinates with Y-axis inversion
+            // NOTE: No -1 for continuous coordinates
+            float worldX = (float) (tileX * map.tileSize);
+            float worldY = (float) ((maxTileY - tileY) * map.tileSize);
 
             markers.markerPositions.add(new Vector2(worldX, worldY));
+            
+            // Log first 3 markers
+            if (markers.markerPositions.size <= 3) {
+                com.badlogic.gdx.Gdx.app.log("MarkerSystem", m.name + " at lat=" + m.latitude + " lon=" + m.longitude +
+                    " -> tile[" + String.format("%.2f", tileX) + "," + String.format("%.2f", tileY) + 
+                    "] -> world[" + String.format("%.1f", worldX) + "," + String.format("%.1f", worldY) + "]");
+            }
         }
+        
+        com.badlogic.gdx.Gdx.app.log("MarkerSystem", "Converted " + markers.markerPositions.size + " markers");
     }
 }

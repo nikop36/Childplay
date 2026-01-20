@@ -44,9 +44,36 @@ public class GameClass extends ApplicationAdapter {
                 1.0 / Math.cos(Math.toRadians(centerLat))) / Math.PI) / 2.0 * (1 << map.zoom)
         );
 
-        float centerWorldX = map.centerTileX * map.tileSize;
-        float centerWorldY = map.centerTileY * map.tileSize;
+        // Calculate how many tiles are needed to fill the viewport
+        int tilesX = (int) Math.ceil(Gdx.graphics.getWidth() / (float) map.tileSize) + 1;
+        int tilesY = (int) Math.ceil(Gdx.graphics.getHeight() / (float) map.tileSize) + 1;
+        
+        map.gridSize = Math.max(tilesX, tilesY);
+        
+        int maxTileY = (1 << map.zoom);
+        int half = map.gridSize / 2;
+        
+        // World bounds = exactly the loaded tiles
+        // Tiles loaded: centerTile - half + 0, centerTile - half + 1, ..., centerTile - half + (gridSize-1)
+        int minTileX = map.centerTileX - half;
+        int maxTileX = map.centerTileX - half + map.gridSize - 1;
+        int minTileY = map.centerTileY - half;
+        int maxTileY_tile = map.centerTileY - half + map.gridSize - 1;
+        
+        map.worldWidth = map.gridSize * map.tileSize;
+        map.worldHeight = map.gridSize * map.tileSize;
+        map.worldMinX = minTileX * map.tileSize;
+        map.worldMinY = (maxTileY - maxTileY_tile - 1) * map.tileSize;
+        
+        Gdx.app.log("GameClass", "Grid size: " + map.gridSize + "x" + map.gridSize);
+        Gdx.app.log("GameClass", "World bounds: [" + map.worldMinX + ", " + map.worldMinY + 
+                    "] to [" + (map.worldMinX + map.worldWidth) + ", " + (map.worldMinY + map.worldHeight) + "]");
+        
+        // Center camera in the middle of the loaded tile area
+        float centerWorldX = map.worldMinX + map.worldWidth / 2f;
+        float centerWorldY = map.worldMinY + map.worldHeight / 2f;
         map.camera.position.set(centerWorldX, centerWorldY, 0);
+        Gdx.app.log("GameClass", "Camera centered at: [" + centerWorldX + ", " + centerWorldY + "]");
         map.camera.update();
 
         tileLoader = new TileLoaderSystem(map, tiles);
@@ -65,6 +92,10 @@ public class GameClass extends ApplicationAdapter {
 
     @Override
     public void render() {
+        com.badlogic.gdx.graphics.GL20 gl = Gdx.gl;
+        gl.glClearColor(0.1f, 0.1f, 0.1f, 1);
+        gl.glClear(com.badlogic.gdx.graphics.GL20.GL_COLOR_BUFFER_BIT);
+        
         map.camera.update();
         batch.begin();
         renderSystem.render(batch);

@@ -60,6 +60,9 @@ public class RenderSystem {
             }
         }
 
+        // End batch before drawing shapes
+        batch.end();
+
         // markers
         shapes.setProjectionMatrix(map.camera.combined);
         shapes.begin(ShapeRenderer.ShapeType.Filled);
@@ -70,6 +73,9 @@ public class RenderSystem {
         }
 
         shapes.end();
+
+        // Resume batch for UI
+        batch.begin();
 
         // UI in screen space
         batch.setProjectionMatrix(batch.getProjectionMatrix().idt());
