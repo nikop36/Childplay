@@ -1,12 +1,9 @@
-package si.um.feri.rri.system;
+package si.um.feri.rri.old;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.Json;
 import si.um.feri.rri.component.MarkerComponent;
 import si.um.feri.rri.component.UIComponent;
 import si.um.feri.rri.services.WMSDataFetcher;
-
 
 public class DataSystem {
 
@@ -19,24 +16,6 @@ public class DataSystem {
     public DataSystem(MarkerComponent markers, UIComponent ui) {
         this.markers = markers;
         this.ui = ui;
-    }
-
-    public void saveCustomMarkers() {
-        Json json = new Json();
-        String output = json.toJson(markers.customMarkers);
-        Gdx.files.local("custom_markers.json").writeString(output, false);
-    }
-
-    public void loadCustomMarkers() {
-        if (!Gdx.files.local("custom_markers.json").exists()) return;
-
-        String input = Gdx.files.local("custom_markers.json").readString();
-        Json json = new Json();
-        Array<WMSDataFetcher.LocationData> loaded =
-            json.fromJson(Array.class, WMSDataFetcher.LocationData.class, input);
-
-        markers.customMarkers.clear();
-        markers.customMarkers.addAll(loaded);
     }
 
     public void loadAll(Runnable onComplete) {
@@ -74,4 +53,3 @@ public class DataSystem {
         if (loaded >= 3) onComplete.run();
     }
 }
-
