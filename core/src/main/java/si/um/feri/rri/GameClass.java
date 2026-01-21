@@ -100,12 +100,11 @@ public class GameClass extends ApplicationAdapter {
         markerEditSystem = new MarkerEditSystem(markers, ui, markerSystem, dataSystem);
         renderSystem = new RenderSystem(map, tiles, markers, ui);
         cameraSystem = new CameraSystem(map);
-        inputSystem = new InputSystem(cameraSystem, map, markers, ui);
+        inputSystem = new InputSystem(cameraSystem, map, markers, ui, stage);
         trainAnimationSystem = new TrainAnimationSystem(markers);
         uiManager = new UIManager(stage, skin, ui, markers);
 
-
-        Gdx.input.setInputProcessor(inputSystem);
+        Gdx.input.setInputProcessor(new InputMultiplexer(stage, inputSystem));
 
         tileLoader.loadAllTiles();
 

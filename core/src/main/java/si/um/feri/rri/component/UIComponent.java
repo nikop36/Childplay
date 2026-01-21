@@ -35,6 +35,12 @@ public class UIComponent {
 
     // For editing markers
     public si.um.feri.rri.services.WMSDataFetcher.LocationData editingMarker = null;
+
+    // Waiting for marker placement
+    public boolean waitingForPlacement = false;
+    public String pendingMarkerName;
+    public String pendingMarkerType;
+
 }
 
 

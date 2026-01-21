@@ -5,9 +5,14 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.scenes.scene2d.Stage;
 import si.um.feri.rri.component.MapComponent;
 import si.um.feri.rri.component.MarkerComponent;
 import si.um.feri.rri.component.UIComponent;
+import com.badlogic.gdx.scenes.scene2d.ui.TextField;
+
+
+import java.awt.*;
 
 public class InputSystem implements InputProcessor {
 
@@ -15,6 +20,7 @@ public class InputSystem implements InputProcessor {
     private final MapComponent map;
     private final MarkerComponent markers;
     private final UIComponent ui;
+    private final Stage stage;
 
     private float lastX, lastY;
     private boolean dragging = false;
@@ -23,11 +29,12 @@ public class InputSystem implements InputProcessor {
     private static final float CLICK_RADIUS = 12f;
 
     public InputSystem(CameraSystem cameraSystem, MapComponent map,
-                       MarkerComponent markers, UIComponent ui) {
+                       MarkerComponent markers, UIComponent ui, Stage stage) {
         this.cameraSystem = cameraSystem;
         this.map = map;
         this.markers = markers;
         this.ui = ui;
+        this.stage = stage;
     }
 
     // Called every frame
@@ -80,6 +87,12 @@ public class InputSystem implements InputProcessor {
     // -----------------------------
     @Override
     public boolean touchDown(int x, int y, int pointer, int button) {
+        if (ui.waitingForPlacement) return false;
+
+        if (stage.hit(x, Gdx.graphics.getHeight() - y, true) != null) {
+            return false;
+        }
+
         lastX = x;
         lastY = y;
         dragging = false;
@@ -92,6 +105,8 @@ public class InputSystem implements InputProcessor {
     // -----------------------------
     @Override
     public boolean touchDragged(int x, int y, int pointer) {
+        if (ui.waitingForPlacement) return false;
+
         if (clickedOnMarker) return true;
 
         dragging = true;
@@ -110,6 +125,40 @@ public class InputSystem implements InputProcessor {
     // -----------------------------
     @Override
     public boolean touchUp(int x, int y, int pointer, int button) {
+        // If we are in placement mode, place marker on map click
+        if (ui.waitingForPlacement) {
+
+            Vector3 world = map.camera.unproject(new Vector3(x, y, 0));
+
+            // Convert world → pixel inside the tile grid
+            double pixelX = world.x - map.worldMinX;
+            double pixelY = (map.worldMinY + map.worldHeight) - world.y;
+
+            // Convert pixel → tile
+            double tileX = pixelX / map.tileSize;
+            double tileY = pixelY / map.tileSize;
+
+            // Convert tile → lon
+            double lon = tileX / (1 << map.zoom) * 360.0 - 180.0;
+
+            // Convert tile → lat
+            double n = Math.PI - 2.0 * Math.PI * tileY / (1 << map.zoom);
+            double lat = Math.toDegrees(Math.atan(Math.sinh(n)));
+
+            ui.newMarkerName = ui.pendingMarkerName;
+            ui.newMarkerType = ui.pendingMarkerType;
+            ui.newMarkerLat = lat;
+            ui.newMarkerLon = lon;
+
+            ui.addMarkerRequested = true;
+            ui.waitingForPlacement = false;
+
+            return true;
+        }
+
+        if (stage.hit(x, Gdx.graphics.getHeight() - y, true) != null) {
+            return false;
+        }
 
         // UI windows first
         if (ui.showAddWindow) {
@@ -261,6 +310,9 @@ public class InputSystem implements InputProcessor {
 
     @Override
     public boolean keyDown(int keycode) {
+        if (stage.getKeyboardFocus() instanceof TextField) {
+            return false;
+        }
 
         // Toggle edit mode
         if (keycode == Input.Keys.E) {

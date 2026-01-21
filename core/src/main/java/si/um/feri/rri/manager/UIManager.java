@@ -1,8 +1,10 @@
 package si.um.feri.rri.manager;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import si.um.feri.rri.component.MarkerComponent;
 import si.um.feri.rri.component.UIComponent;
 import si.um.feri.rri.component.enums.MarkerType;
@@ -14,17 +16,17 @@ public class UIManager {
     private final UIComponent ui;
     private final MarkerComponent markers;
 
+    private Label editModeLabel;
     private Label statsLabel;
     private Label infoLabel;
 
     private Window addWindow;
-    private TextField addNameField, addTypeField, addLatField, addLonField;
+    private TextField addNameField, addTypeField;
 
     private Window editWindow;
-    private TextField editNameField, editTypeField, editLatField, editLonField;
+    private TextField editNameField, editTypeField;
 
     private Window infoWindow;
-
 
     public UIManager(Stage stage, Skin skin, UIComponent ui, MarkerComponent markers) {
         this.stage = stage;
@@ -47,16 +49,13 @@ public class UIManager {
         header.setPosition(0, Gdx.graphics.getHeight() - 160);
         header.pad(10);
 
-        header.setSize(350, 160);
-        header.setPosition(0, Gdx.graphics.getHeight() - 160);
-
-        header.pad(10);
-
         Label title = new Label("Childplay Maribor", skin);
         statsLabel = new Label("Loading...", skin);
+        editModeLabel = new Label("Mode: VIEW (press E)", skin);
 
         header.add(title).left().row();
         header.add(statsLabel).left().row();
+        header.add(editModeLabel).left().row();
 
         stage.addActor(header);
     }
@@ -64,7 +63,7 @@ public class UIManager {
     private void createInfoWindow() {
         infoWindow = new Window("Marker Info", skin);
         infoWindow.setSize(300, 150);
-        infoWindow.setPosition(Gdx.graphics.getWidth() - 320, 20); // spodaj desno
+        infoWindow.setPosition(Gdx.graphics.getWidth() - 320, 20);
 
         infoLabel = new Label("No marker selected", skin);
         infoWindow.add(infoLabel).left().top().pad(10);
@@ -79,30 +78,38 @@ public class UIManager {
 
         CheckBox cbKind = new CheckBox("Kindergartens", skin);
         cbKind.setChecked(true);
-        cbKind.addListener(e -> {
-            toggleFilter(MarkerType.KINDERGARTEN, cbKind.isChecked());
-            return false;
+        cbKind.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                toggleFilter(MarkerType.KINDERGARTEN, cbKind.isChecked());
+            }
         });
 
         CheckBox cbPlay = new CheckBox("Playgrounds", skin);
         cbPlay.setChecked(true);
-        cbPlay.addListener(e -> {
-            toggleFilter(MarkerType.PLAYGROUND, cbPlay.isChecked());
-            return false;
+        cbPlay.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                toggleFilter(MarkerType.PLAYGROUND, cbPlay.isChecked());
+            }
         });
 
         CheckBox cbTrain = new CheckBox("Train Stops", skin);
         cbTrain.setChecked(true);
-        cbTrain.addListener(e -> {
-            toggleFilter(MarkerType.TRAIN, cbTrain.isChecked());
-            return false;
+        cbTrain.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                toggleFilter(MarkerType.TRAIN, cbTrain.isChecked());
+            }
         });
 
         CheckBox cbCustom = new CheckBox("Custom", skin);
         cbCustom.setChecked(true);
-        cbCustom.addListener(e -> {
-            toggleFilter(MarkerType.CUSTOM, cbCustom.isChecked());
-            return false;
+        cbCustom.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                toggleFilter(MarkerType.CUSTOM, cbCustom.isChecked());
+            }
         });
 
         filterWin.add(cbKind).left().row();
@@ -120,40 +127,44 @@ public class UIManager {
 
     private void createAddWindow() {
         addWindow = new Window("Add Marker", skin);
-        addWindow.setSize(300, 250);
-        addWindow.setPosition(50, Gdx.graphics.getHeight() - 300);
+        addWindow.setSize(300, 180);
+        addWindow.setPosition(
+            Gdx.graphics.getWidth() / 2f - addWindow.getWidth() / 2f,
+            Gdx.graphics.getHeight() / 2f - addWindow.getHeight() / 2f
+        );
         addWindow.setVisible(false);
 
         addNameField = new TextField("", skin);
         addTypeField = new TextField("", skin);
-        addLatField = new TextField("", skin);
-        addLonField = new TextField("", skin);
 
         TextButton saveBtn = new TextButton("Save", skin);
-        saveBtn.addListener(e -> {
-            ui.newMarkerName = addNameField.getText();
-            ui.newMarkerType = addTypeField.getText();
-            ui.newMarkerLat = Double.parseDouble(addLatField.getText());
-            ui.newMarkerLon = Double.parseDouble(addLonField.getText());
-            ui.addMarkerRequested = true;
-            addWindow.setVisible(false);
-            return false;
+        saveBtn.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+
+                ui.pendingMarkerName = addNameField.getText();
+                ui.pendingMarkerType = addTypeField.getText();
+
+                ui.waitingForPlacement = true;
+
+                addWindow.setVisible(false);
+                stage.unfocusAll();
+            }
         });
 
         TextButton cancelBtn = new TextButton("Cancel", skin);
-        cancelBtn.addListener(e -> {
-            addWindow.setVisible(false);
-            return false;
+        cancelBtn.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                addWindow.setVisible(false);
+                stage.unfocusAll();
+            }
         });
 
         addWindow.add("Name:").left();
         addWindow.add(addNameField).row();
         addWindow.add("Type:").left();
         addWindow.add(addTypeField).row();
-        addWindow.add("Lat:").left();
-        addWindow.add(addLatField).row();
-        addWindow.add("Lon:").left();
-        addWindow.add(addLonField).row();
         addWindow.add(saveBtn);
         addWindow.add(cancelBtn);
 
@@ -162,41 +173,41 @@ public class UIManager {
 
     private void createEditWindow() {
         editWindow = new Window("Edit Marker", skin);
-        editWindow.setSize(300, 250);
+        editWindow.setSize(300, 180);
         editWindow.setPosition(400, Gdx.graphics.getHeight() - 300);
         editWindow.setVisible(false);
 
         editNameField = new TextField("", skin);
         editTypeField = new TextField("", skin);
-        editLatField = new TextField("", skin);
-        editLonField = new TextField("", skin);
 
         TextButton saveBtn = new TextButton("Save", skin);
-        saveBtn.addListener(e -> {
-            ui.newMarkerName = editNameField.getText();
-            ui.newMarkerType = editTypeField.getText();
-            ui.newMarkerLat = Double.parseDouble(editLatField.getText());
-            ui.newMarkerLon = Double.parseDouble(editLonField.getText());
-            ui.saveEditRequested = true;
-            editWindow.setVisible(false);
-            return false;
+        saveBtn.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                ui.newMarkerName = editNameField.getText();
+                ui.newMarkerType = editTypeField.getText();
+                ui.saveEditRequested = true;
+
+                editWindow.setVisible(false);
+                stage.unfocusAll();
+            }
         });
 
         TextButton deleteBtn = new TextButton("Delete", skin);
-        deleteBtn.addListener(e -> {
-            ui.deleteMarkerRequested = true;
-            editWindow.setVisible(false);
-            return false;
+        deleteBtn.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                ui.deleteMarkerRequested = true;
+
+                editWindow.setVisible(false);
+                stage.unfocusAll();
+            }
         });
 
         editWindow.add("Name:").left();
         editWindow.add(editNameField).row();
         editWindow.add("Type:").left();
         editWindow.add(editTypeField).row();
-        editWindow.add("Lat:").left();
-        editWindow.add(editLatField).row();
-        editWindow.add("Lon:").left();
-        editWindow.add(editLonField).row();
         editWindow.add(saveBtn);
         editWindow.add(deleteBtn);
 
@@ -204,12 +215,10 @@ public class UIManager {
     }
 
     public void update() {
-        // Update stats
         statsLabel.setText("Kindergartens: " + ui.kindergartens + "\n" +
             "Playgrounds: " + ui.playgrounds + "\n" +
             "Train Stops: " + ui.trainStops);
 
-        // Update info panel
         if (markers.selected != null) {
             infoLabel.setText(
                 markers.selected.name + "\n" +
@@ -222,24 +231,26 @@ public class UIManager {
             infoLabel.setText("No marker selected");
         }
 
-        // Show Add window
         if (ui.showAddWindow) {
             addNameField.setText("");
             addTypeField.setText("");
-            addLatField.setText("");
-            addLonField.setText("");
             addWindow.setVisible(true);
+            stage.setKeyboardFocus(addNameField);
             ui.showAddWindow = false;
         }
 
-        // Show Edit window
         if (ui.showEditWindow && ui.editingMarker != null) {
             editNameField.setText(ui.editingMarker.name);
             editTypeField.setText(ui.editingMarker.type);
-            editLatField.setText(String.valueOf(ui.editingMarker.latitude));
-            editLonField.setText(String.valueOf(ui.editingMarker.longitude));
             editWindow.setVisible(true);
+            stage.setKeyboardFocus(editNameField);
             ui.showEditWindow = false;
         }
+
+        if (ui.waitingForPlacement) {
+            infoLabel.setText("IN PLACEMENT MODE...\nClick on map to place marker");
+        }
+
+        editModeLabel.setText(ui.editMode ? "Mode: EDIT (press E)" : "Mode: VIEW (press E)");
     }
 }
