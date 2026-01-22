@@ -68,6 +68,7 @@ public class RenderSystem {
     }
 
     private void renderTrainRoutes() {
+        if (!ui.activeFilters.contains(MarkerType.TRAIN)) return;
         if (markers.trainRouteWorldCoords.size <= 1) return;
 
         shapes.setProjectionMatrix(map.camera.combined);
@@ -164,6 +165,8 @@ public class RenderSystem {
     }
 
     private void renderTrains() {
+        if (!ui.activeFilters.contains(MarkerType.TRAIN)) return;
+        
         shapes.setProjectionMatrix(map.camera.combined);
 
         // Filled circles
@@ -219,9 +222,13 @@ public class RenderSystem {
         batch.setProjectionMatrix(map.camera.combined);
 
         renderTiles(batch);
+        batch.end();
+        
         renderTrainRoutes();
         renderMarkers();
         renderTrains();
+        
+        batch.begin();
     }
 
     // ---------------------------------------------------------
