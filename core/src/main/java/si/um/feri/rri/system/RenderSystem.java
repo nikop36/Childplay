@@ -2,6 +2,8 @@ package si.um.feri.rri.system;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -25,6 +27,12 @@ public class RenderSystem {
     private final BitmapFont font = new BitmapFont();
     private final BitmapFont titleFont = new BitmapFont();
 
+    // Marker icon textures
+    private final Texture iconKindergarten;
+    private final Texture iconPlayground;
+    private final Texture iconTrain;
+    private final Texture iconTrainMoving;
+
     public RenderSystem(MapComponent map, TileComponent tiles,
                         MarkerComponent markers, UIComponent ui) {
         this.map = map;
@@ -34,6 +42,42 @@ public class RenderSystem {
 
         titleFont.getData().setScale(2f);
         font.getData().setScale(1.2f);
+
+        // Load icons from assets/ui/icons/ with fallbacks
+        Texture fallback = createFallbackTexture();
+
+        Texture t;
+        try {
+            t = new Texture(Gdx.files.internal("ui/icons/kindergarden.png"));
+        } catch (Exception e) {
+            Gdx.app.error("RenderSystem", "Failed to load kindergarden icon: " + e.getMessage());
+            t = fallback;
+        }
+        iconKindergarten = t;
+
+        try {
+            t = new Texture(Gdx.files.internal("ui/icons/playground.png"));
+        } catch (Exception e) {
+            Gdx.app.error("RenderSystem", "Failed to load playground icon: " + e.getMessage());
+            t = fallback;
+        }
+        iconPlayground = t;
+
+        try {
+            t = new Texture(Gdx.files.internal("ui/icons/train.png"));
+        } catch (Exception e) {
+            Gdx.app.error("RenderSystem", "Failed to load train icon: " + e.getMessage());
+            t = fallback;
+        }
+        iconTrain = t;
+
+        try {
+            t = new Texture(Gdx.files.internal("ui/icons/train_moving.png"));
+        } catch (Exception e) {
+            Gdx.app.error("RenderSystem", "Failed to load train_moving icon: " + e.getMessage());
+            t = fallback;
+        }
+        iconTrainMoving = t;
     }
 
     // ---------------------------------------------------------
@@ -87,16 +131,6 @@ public class RenderSystem {
         shapes.end();
     }
 
-    private void renderMarkers() {
-        shapes.setProjectionMatrix(map.camera.combined);
-        shapes.begin(ShapeRenderer.ShapeType.Filled);
-
-        renderApiMarkers();
-        renderCustomMarkers();
-
-        shapes.end();
-    }
-
     private MarkerType toMarkerType(String type) {
         if (type == null) return null;
         switch (type.toLowerCase()) {
@@ -108,7 +142,8 @@ public class RenderSystem {
         }
     }
 
-    private void renderApiMarkers() {
+    private void renderMarkerIcons(SpriteBatch batch) {
+        // Draw API markers using icons
         for (int i = 0; i < markers.markerPositions.size; i++) {
             Vector2 pos = markers.markerPositions.get(i);
             WMSDataFetcher.LocationData data = markers.markers.get(i);
@@ -120,75 +155,84 @@ public class RenderSystem {
             boolean isSelected = markers.selected == data;
             boolean isHovered = markers.hovered == data;
 
-            // Color
+            // Make icons smaller: normal / hovered / selected
+            float baseSize = 24f;
+            if (isHovered) baseSize = 30f;
+            if (isSelected) baseSize = 36f;
+
+            Texture tex = null;
             switch (type) {
-                case KINDERGARTEN: shapes.setColor(0.2f, 0.6f, 1f, 1f); break;
-                case PLAYGROUND:   shapes.setColor(0.2f, 0.8f, 0.2f, 1f); break;
-                case TRAIN:        shapes.setColor(1f, 0.5f, 0f, 1f); break;
-                default:           shapes.setColor(Color.RED);
+                case KINDERGARTEN: tex = iconKindergarten; break;
+                case PLAYGROUND:   tex = iconPlayground;   break;
+                case TRAIN:        tex = iconTrain;        break;
+                default:           tex = iconTrain;        break;
             }
 
-            float size = isSelected ? 10f : isHovered ? 8f : 6f;
-            shapes.circle(pos.x, pos.y, size);
+            batch.draw(tex, pos.x - baseSize / 2f, pos.y - baseSize / 2f, baseSize, baseSize);
 
-            if (isSelected || isHovered) drawMarkerOutline(pos, size);
+            if (isSelected || isHovered) {
+                // draw outline using shapes; end batch temporarily
+                batch.end();
+                drawMarkerOutline(pos, baseSize / 2f + 4f);
+                batch.begin();
+            }
+        }
+
+        // Custom markers (use a magenta circle or reuse an icon)
+        if (ui.activeFilters.contains(MarkerType.CUSTOM)) {
+            for (int i = 0; i < markers.customMarkerPositions.size; i++) {
+                Vector2 pos = markers.customMarkerPositions.get(i);
+                WMSDataFetcher.LocationData data = markers.customMarkers.get(i);
+
+                boolean isSelected = markers.selected == data;
+                boolean isHovered = markers.hovered == data;
+
+                // Make custom icons smaller too
+                float baseSize = 24f;
+                if (isHovered) baseSize = 30f;
+                if (isSelected) baseSize = 36f;
+
+                // fallback icon for custom markers
+                batch.draw(iconTrain, pos.x - baseSize / 2f, pos.y - baseSize / 2f, baseSize, baseSize);
+
+                if (isSelected || isHovered) {
+                    batch.end();
+                    drawMarkerOutline(pos, baseSize / 2f + 4f);
+                    batch.begin();
+                }
+            }
         }
     }
 
-    private void renderCustomMarkers() {
-        if (!ui.activeFilters.contains(MarkerType.CUSTOM)) return;
-
-        for (int i = 0; i < markers.customMarkerPositions.size; i++) {
-            Vector2 pos = markers.customMarkerPositions.get(i);
-            WMSDataFetcher.LocationData data = markers.customMarkers.get(i);
-
-            boolean isSelected = markers.selected == data;
-            boolean isHovered = markers.hovered == data;
-
-            shapes.setColor(0.7f, 0.2f, 1f, 1f);
-
-            float size = isSelected ? 11f : isHovered ? 9f : 7f;
-            shapes.circle(pos.x, pos.y, size);
-
-            if (isSelected || isHovered) drawMarkerOutline(pos, size);
-        }
-    }
-
-    private void drawMarkerOutline(Vector2 pos, float size) {
-        shapes.end();
+    private void drawMarkerOutline(Vector2 pos, float radius) {
+        shapes.setProjectionMatrix(map.camera.combined);
         shapes.begin(ShapeRenderer.ShapeType.Line);
         shapes.setColor(Color.WHITE);
-        Gdx.gl.glLineWidth(2);
-        shapes.circle(pos.x, pos.y, size);
+        try {
+            Gdx.gl.glLineWidth(2);
+        } catch (Exception ignored) {}
+        shapes.circle(pos.x, pos.y, radius);
         shapes.end();
-        shapes.begin(ShapeRenderer.ShapeType.Filled);
     }
 
-    private void renderTrains() {
+    private void renderTrains(SpriteBatch batch) {
         if (!ui.activeFilters.contains(MarkerType.TRAIN)) return;
-        
-        shapes.setProjectionMatrix(map.camera.combined);
 
-        // Filled circles
-        shapes.begin(ShapeRenderer.ShapeType.Filled);
-        shapes.setColor(1f, 0.8f, 0f, 1f);
+        // Draw train icons at interpolated positions. Begin/end the batch here because
+        // renderWorld wraps batch.begin()/end around other sections.
+        float iconSize = 28f; // slightly larger than marker icons
 
         Vector2 t1 = getTrainPosition(1);
-        if (t1 != null) shapes.circle(t1.x, t1.y, 12);
-
         Vector2 t2 = getTrainPosition(2);
-        if (t2 != null) shapes.circle(t2.x, t2.y, 12);
 
-        shapes.end();
-
-        // Outlines
-        shapes.begin(ShapeRenderer.ShapeType.Line);
-        shapes.setColor(1f, 0.5f, 0f, 1f);
-
-        if (t1 != null) shapes.circle(t1.x, t1.y, 12);
-        if (t2 != null) shapes.circle(t2.x, t2.y, 12);
-
-        shapes.end();
+        batch.begin();
+        if (t1 != null) {
+            batch.draw(iconTrainMoving, t1.x - iconSize / 2f, t1.y - iconSize / 2f, iconSize, iconSize);
+        }
+        if (t2 != null) {
+            batch.draw(iconTrainMoving, t2.x - iconSize / 2f, t2.y - iconSize / 2f, iconSize, iconSize);
+        }
+        batch.end();
     }
 
     private Vector2 getTrainPosition(int train) {
@@ -209,6 +253,48 @@ public class RenderSystem {
         return null;
     }
 
+    private Vector2 getPositionOnRoute(MarkerComponent markers, int startIdx, int endIdx, float progress) {
+        // Validate indices and route length
+        if (startIdx >= endIdx) return null;
+        if (markers.trainRouteWorldCoords.size <= startIdx) return null;
+        // Ensure endIdx is within bounds
+        int safeEnd = Math.min(endIdx, markers.trainRouteWorldCoords.size - 1);
+        int routeLength = safeEnd - startIdx + 1;
+        if (routeLength < 2) return null; // need at least two points to interpolate
+
+        float clampedProgress = Math.max(0f, Math.min(1f, progress));
+        // Compute a base index in [startIdx, safeEnd]
+        int rawIndex = startIdx + (int)(clampedProgress * (routeLength - 1));
+        // Clamp index so index+1 is valid (<= safeEnd-1)
+        int index = Math.min(rawIndex, safeEnd - 1);
+        // Recompute fraction relative to the chosen segment
+        float fraction;
+        if (routeLength == 1) {
+            fraction = 0f;
+        } else {
+            float segmentCount = (routeLength - 1);
+            float progressPos = clampedProgress * segmentCount;
+            fraction = progressPos - (index - startIdx);
+        }
+
+        // Avoid separator
+        if (markers.route1SeparatorIndex >= 0) {
+            if (index == markers.route1SeparatorIndex || index + 1 == markers.route1SeparatorIndex) {
+                return null;
+            }
+        }
+
+        Vector2 p1 = markers.trainRouteWorldCoords.get(index);
+        Vector2 p2 = markers.trainRouteWorldCoords.get(index + 1);
+
+        if (p1.x < -999000 || p2.x < -999000) return null;
+
+        return new Vector2(
+            p1.x + (p2.x - p1.x) * fraction,
+            p1.y + (p2.y - p1.y) * fraction
+        );
+    }
+
     // ---------------------------------------------------------
     // UI RENDERING
     // ---------------------------------------------------------
@@ -223,46 +309,27 @@ public class RenderSystem {
 
         renderTiles(batch);
         batch.end();
-        
+
+        // Train routes use ShapeRenderer
         renderTrainRoutes();
-        renderMarkers();
-        renderTrains();
-        
+
+        // Draw icons with SpriteBatch
+        batch.begin();
+        renderMarkerIcons(batch);
+        batch.end();
+
+        // Trains as icons
+        renderTrains(batch);
+
         batch.begin();
     }
 
-    // ---------------------------------------------------------
-    // TRAIN POSITION
-    // ---------------------------------------------------------
-
-    private Vector2 getPositionOnRoute(MarkerComponent markers, int startIdx, int endIdx, float progress) {
-        if (startIdx >= endIdx || markers.trainRouteWorldCoords.size <= endIdx) return null;
-
-        int routeLength = endIdx - startIdx + 1;
-        float clampedProgress = Math.max(0f, Math.min(1f, progress));
-        int index = startIdx + (int)(clampedProgress * (routeLength - 1));
-        float fraction = (clampedProgress * (routeLength - 1)) - (index - startIdx);
-
-        // Ne interpoliraj čez separator
-        if (markers.route1SeparatorIndex >= 0) {
-            if (index == markers.route1SeparatorIndex ||
-                index + 1 == markers.route1SeparatorIndex) {
-                return null;
-            }
-        }
-
-        if (index >= markers.trainRouteWorldCoords.size - 1)
-            return markers.trainRouteWorldCoords.get(markers.trainRouteWorldCoords.size - 1);
-
-        Vector2 p1 = markers.trainRouteWorldCoords.get(index);
-        Vector2 p2 = markers.trainRouteWorldCoords.get(index + 1);
-
-        if (p1.x < -999000 || p2.x < -999000) return null;
-
-        return new Vector2(
-            p1.x + (p2.x - p1.x) * fraction,
-            p1.y + (p2.y - p1.y) * fraction
-        );
+    private Texture createFallbackTexture() {
+        Pixmap pix = new Pixmap(8, 8, Pixmap.Format.RGBA8888);
+        pix.setColor(1f, 0f, 1f, 1f); // magenta to be noticeable
+        pix.fill();
+        Texture tex = new Texture(pix);
+        pix.dispose();
+        return tex;
     }
 }
-
