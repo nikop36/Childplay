@@ -71,6 +71,7 @@ public class MarkerEditSystem {
 
         markers.customMarkers.removeValue(ui.editingMarker, true);
         markerSystem.convertMarkersToWorld();
+        markers.selected = null;
         dataSystem.saveCustomMarkers();
     }
 }

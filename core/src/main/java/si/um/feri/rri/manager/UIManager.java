@@ -70,7 +70,6 @@ public class UIManager {
         infoWindow.row();
         infoWindow.add(infoLabel).width(280).left().top().pad(10);
 
-
         stage.addActor(infoWindow);
     }
 
@@ -130,7 +129,7 @@ public class UIManager {
 
     private void createAddWindow() {
         addWindow = new Window("Add Marker", skin);
-        addWindow.setSize(300, 180);
+        addWindow.setSize(300, 150);
         addWindow.setPosition(
             Gdx.graphics.getWidth() / 2f - addWindow.getWidth() / 2f,
             Gdx.graphics.getHeight() / 2f - addWindow.getHeight() / 2f
@@ -138,7 +137,6 @@ public class UIManager {
         addWindow.setVisible(false);
 
         addNameField = new TextField("", skin);
-        addTypeField = new TextField("", skin);
 
         TextButton saveBtn = new TextButton("Save", skin);
         saveBtn.addListener(new ChangeListener() {
@@ -146,7 +144,7 @@ public class UIManager {
             public void changed(ChangeEvent event, Actor actor) {
 
                 ui.pendingMarkerName = addNameField.getText();
-                ui.pendingMarkerType = addTypeField.getText();
+                ui.pendingMarkerType = "custom";
 
                 ui.waitingForPlacement = true;
 
@@ -165,14 +163,14 @@ public class UIManager {
         });
 
         addWindow.add("Name:").left();
-        addWindow.add(addNameField).row();
-        addWindow.add("Type:").left();
-        addWindow.add(addTypeField).row();
-        addWindow.add(saveBtn);
-        addWindow.add(cancelBtn);
+        addWindow.add(addNameField).width(200).row();
+
+        addWindow.add(saveBtn).padTop(10);
+        addWindow.add(cancelBtn).padTop(10);
 
         stage.addActor(addWindow);
     }
+
 
     private void createEditWindow() {
         editWindow = new Window("Edit Marker", skin);
@@ -222,21 +220,31 @@ public class UIManager {
             "Playgrounds: " + ui.playgrounds + "\n" +
             "Train Stops: " + ui.trainStops);
 
+
         if (markers.selected != null) {
-            infoLabel.setText(
-                markers.selected.name + "\n" +
-                    "Type: " + markers.selected.type + "\n" +
-                    String.format("Lat: %.4f\nLon: %.4f",
-                        markers.selected.latitude,
-                        markers.selected.longitude)
-            );
+            boolean isCustom = "custom".equalsIgnoreCase(markers.selected.type);
+
+            if (isCustom) {
+                infoLabel.setText(
+                    markers.selected.name + "\n" +
+                        "Type: " + markers.selected.type
+                );
+            } else {
+                infoLabel.setText(
+                    markers.selected.name + "\n" +
+                        "Type: " + markers.selected.type + "\n" +
+                        String.format("Lat: %.4f\nLon: %.4f",
+                            markers.selected.latitude,
+                            markers.selected.longitude)
+                );
+            }
         } else {
             infoLabel.setText("No marker selected");
         }
 
+
         if (ui.showAddWindow) {
             addNameField.setText("");
-            addTypeField.setText("");
             addWindow.setVisible(true);
             stage.setKeyboardFocus(addNameField);
             ui.showAddWindow = false;

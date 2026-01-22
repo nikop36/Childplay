@@ -22,8 +22,6 @@ public class UIComponent {
     public boolean showEditWindow = false;
 
     // For adding/editing markers
-    public double newMarkerLat;
-    public double newMarkerLon;
     public float newMarkerWorldX;
     public float newMarkerWorldY;
     public String newMarkerName = "";

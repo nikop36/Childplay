@@ -210,8 +210,6 @@ public class InputSystem implements InputProcessor {
                     // preload fields
                     ui.newMarkerName = markers.selected.name;
                     ui.newMarkerType = markers.selected.type;
-                    ui.newMarkerLat = markers.selected.latitude;
-                    ui.newMarkerLon = markers.selected.longitude;
                 }
 
                 return;
