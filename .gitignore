@@ -148,6 +148,9 @@ nb-configuration.xml
 .DS_Store
 Thumbs.db
 
+## Tile Cache:
+tiles_cache/
+
 ## Miscellaneous:
 *~
 *.*#
