@@ -130,25 +130,15 @@ public class InputSystem implements InputProcessor {
 
             Vector3 world = map.camera.unproject(new Vector3(x, y, 0));
 
-            // Convert world → pixel inside the tile grid
-            double pixelX = world.x - map.worldMinX;
-            double pixelY = (map.worldMinY + map.worldHeight) - world.y;
+            ui.newMarkerWorldX = world.x;
+            ui.newMarkerWorldY = world.y;
 
-            // Convert pixel → tile
-            double tileX = pixelX / map.tileSize;
-            double tileY = pixelY / map.tileSize;
-
-            // Convert tile → lon
-            double lon = tileX / (1 << map.zoom) * 360.0 - 180.0;
-
-            // Convert tile → lat
-            double n = Math.PI - 2.0 * Math.PI * tileY / (1 << map.zoom);
-            double lat = Math.toDegrees(Math.atan(Math.sinh(n)));
+            System.out.println("camera.zoom = " + map.camera.zoom);
+            System.out.println("world.x/map.camera.zoom = " + world.x / map.camera.zoom);
+            System.out.println("world.y/map.camera.zoom = " + world.y / map.camera.zoom);
 
             ui.newMarkerName = ui.pendingMarkerName;
             ui.newMarkerType = ui.pendingMarkerType;
-            ui.newMarkerLat = lat;
-            ui.newMarkerLon = lon;
 
             ui.addMarkerRequested = true;
             ui.waitingForPlacement = false;

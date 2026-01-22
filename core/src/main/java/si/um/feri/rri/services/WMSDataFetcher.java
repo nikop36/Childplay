@@ -33,6 +33,8 @@ public class WMSDataFetcher {
         public String type;
         public JsonValue properties;
         public Array<Vector2> routePoints;
+        public float worldX;
+        public float worldY;
 
         public LocationData() {
             routePoints = new Array<>();

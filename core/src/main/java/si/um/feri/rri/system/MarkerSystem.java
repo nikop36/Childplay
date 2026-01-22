@@ -64,7 +64,7 @@ public class MarkerSystem {
             }
         }
 
-        // --- 2) CUSTOM MARKERS ---
+        /* --- 2) CUSTOM MARKERS ---
         for (WMSDataFetcher.LocationData m : markers.customMarkers) {
 
             double tileX = (m.longitude + 180.0) / 360.0 * (1 << map.zoom);
@@ -81,6 +81,11 @@ public class MarkerSystem {
                 Gdx.app.log("MarkerSystem", "[CUSTOM] " + m.name +
                     " -> world[" + worldX + "," + worldY + "]");
             }
+        }
+        */
+
+        for (WMSDataFetcher.LocationData m : markers.customMarkers) {
+            markers.customMarkerPositions.add(new Vector2(m.worldX, m.worldY));
         }
 
         // --- 3) TRAIN ROUTES ---

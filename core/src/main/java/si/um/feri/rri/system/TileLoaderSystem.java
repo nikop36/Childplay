@@ -52,10 +52,10 @@ public class TileLoaderSystem {
                         t.texture = tex;
 
                         tiles.tiles[gx][gy] = t;
-                        
+
                         // Log bottom-right tile details
                         if (gx == map.gridSize - 1 && gy == map.gridSize - 1) {
-                            Gdx.app.log("TileLoader", "Bottom-Right tile loaded: tile[" + tileX + "," + tileY + 
+                            Gdx.app.log("TileLoader", "Bottom-Right tile loaded: tile[" + tileX + "," + tileY +
                                        "] at world[" + t.worldX + "," + t.worldY + "] in grid[" + gx + "," + gy + "]");
                         }
 
@@ -71,13 +71,13 @@ public class TileLoaderSystem {
                 });
             }
 
-            @Override public void failed(Throwable t) { 
+            @Override public void failed(Throwable t) {
                 Gdx.app.error("TileLoader", "HTTP failed for tile [" + tileX + "," + tileY + "]: " + t.getMessage());
-                retry(); 
+                retry();
             }
-            
-            @Override public void cancelled() { 
-                retry(); 
+
+            @Override public void cancelled() {
+                retry();
             }
 
             private void retry() {
@@ -98,41 +98,11 @@ public class TileLoaderSystem {
         });
     }
 
-    /*
-    public void loadAllTiles() {
-
-        tiles.tiles = new TileComponent.Tile[map.gridSize][map.gridSize];
-
-        tiles.totalTiles = map.gridSize * map.gridSize;
-        tiles.loadedTiles = 0;
-        tiles.loaded = false;
-
-        int half = map.gridSize / 2;
-
-        for (int gy = 0; gy < map.gridSize; gy++) {
-            for (int gx = 0; gx < map.gridSize; gx++) {
-
-                int offsetX = gx - half;
-                int offsetY = gy - half;
-
-                int tileX = map.centerTileX + offsetX;
-                int tileY = map.centerTileY + offsetY;
-
-                String url = "https://maps.geoapify.com/v1/tile/osm-bright/" +
-                        map.zoom + "/" + tileX + "/" + tileY + ".png?apiKey=" + API_KEY;
-
-                requestTile(url, gx, gy, tileX, tileY, 3);
-            }
-        }
-    }
-
-    */
-
     public void loadAllTiles() {
 
         int half = map.gridSize / 2;
         tiles.tiles = new TileComponent.Tile[map.gridSize][map.gridSize];
-        
+
         tiles.totalTiles = map.gridSize * map.gridSize;
         tiles.loadedTiles = 0;
         tiles.loaded = false;

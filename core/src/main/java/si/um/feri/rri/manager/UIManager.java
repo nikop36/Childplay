@@ -46,7 +46,7 @@ public class UIManager {
         header.getTitleTable().clear();
         header.setMovable(false);
         header.setSize(350, 160);
-        header.setPosition(0, Gdx.graphics.getHeight() - 160);
+        header.setPosition(10, Gdx.graphics.getHeight() - header.getHeight() - 10);
         header.pad(10);
 
         Label title = new Label("Childplay Maribor", skin);
@@ -63,10 +63,13 @@ public class UIManager {
     private void createInfoWindow() {
         infoWindow = new Window("Marker Info", skin);
         infoWindow.setSize(300, 150);
-        infoWindow.setPosition(Gdx.graphics.getWidth() - 320, 20);
+        infoWindow.setPosition( Gdx.graphics.getWidth() - infoWindow.getWidth() - 10, 10 );
 
         infoLabel = new Label("No marker selected", skin);
-        infoWindow.add(infoLabel).left().top().pad(10);
+        infoLabel.setWrap(true);
+        infoWindow.row();
+        infoWindow.add(infoLabel).width(280).left().top().pad(10);
+
 
         stage.addActor(infoWindow);
     }

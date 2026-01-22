@@ -44,8 +44,8 @@ public class MarkerEditSystem {
         WMSDataFetcher.LocationData m = new WMSDataFetcher.LocationData();
         m.name = ui.newMarkerName;
         m.type = ui.newMarkerType;
-        m.latitude = ui.newMarkerLat;
-        m.longitude = ui.newMarkerLon;
+        m.worldX = ui.newMarkerWorldX;
+        m.worldY = ui.newMarkerWorldY;
 
         markers.customMarkers.add(m);
 
@@ -59,8 +59,8 @@ public class MarkerEditSystem {
 
         m.name = ui.newMarkerName;
         m.type = ui.newMarkerType;
-        m.latitude = ui.newMarkerLat;
-        m.longitude = ui.newMarkerLon;
+        m.worldX = ui.newMarkerWorldX;
+        m.worldY = ui.newMarkerWorldY;
 
         markerSystem.convertMarkersToWorld();
         dataSystem.saveCustomMarkers();

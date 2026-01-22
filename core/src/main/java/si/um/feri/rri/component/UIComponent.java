@@ -24,6 +24,8 @@ public class UIComponent {
     // For adding/editing markers
     public double newMarkerLat;
     public double newMarkerLon;
+    public float newMarkerWorldX;
+    public float newMarkerWorldY;
     public String newMarkerName = "";
     public String newMarkerType = ""; // npr. "kindergarten", "playground", "train", "custom"
     public String newMarkerDescription = "";
